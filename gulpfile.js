@@ -291,7 +291,7 @@ gulp.task('inject', function(){
         .pipe(inject(vendorcssSources, {relative: true, name: "vendor"}))
         // .pipe(inject(vendorSources, {relative: true},  {starttag: '<!-- inject:vendor:{{ext}} -->'}))
         // .pipe(inject(myjsSources, {relative: true}, {starttag: '<!-- inject:myjs:{{ext}} -->'}))
-        .pipe(gulp.dest('source/'));
+        .pipe(gulp.dest('./source/'));
 });
 
 // Watch Files For Changes
