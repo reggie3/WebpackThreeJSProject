@@ -230,7 +230,7 @@ gulp.task('sass', function(){
 gulp.task('jade', function () {
     var YOUR_LOCALS = {};
     
-    gulp.src('./source/*.jade')
+    gulp.src('./source/jade/*.jade')
         .pipe(plumber({
         errorHandler: onError
         }))
