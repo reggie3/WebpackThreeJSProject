@@ -230,7 +230,8 @@ gulp.task('sass', function(){
 gulp.task('jade', function () {
     var YOUR_LOCALS = {};
     
-    gulp.src('./source/jade/*.jade')
+    //get all the jade files in the jade directory and its subdirectory, but don't get jade includes
+    gulp.src(['./source/jade/**/*.jade', '!./source/jade/jadeIncludes/**/*'])
         .pipe(plumber({
         errorHandler: onError
         }))
