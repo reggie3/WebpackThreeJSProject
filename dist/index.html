@@ -1,23 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
-    
-    <script src="./scripts/mJS.js"></script>
-    <!-- mainCSS:css-->
-    <link rel="stylesheet" href="css/main.css">
+    <!--the build lines below are for script path replacement when the source indexe file is compiled and moved to the distribution-->
+    <!--the filese beneath it are for the initial gathering and injection of javascript and css files into the index.html file as used in the source -->
+    <script src="./scripts/vendor.js"></script>
+    <script src="./scripts/myMainJS.js"></script>
+    <!-- mycss:css-->
+    <link rel="stylesheet" href="css/mycss.css">
     <!-- endinject-->
+    <link rel="stylesheet" href="./css/vendors.css">
+    
+    
     <title>Index</title>
   </head>
   <body>
-    <h1>Jade - node template engine</h1>
+    <h1>Web Application Template</h1>
     <div id="container" class="col">
-      <p>Get on it car you fool</p>
-      <p>
-        Jade is a terse and simple
-        templating language with a
-        strong focus on performances
-        and powerful featuress.
-      </p>
+      <p>This is a template for a web application project</p>
+      <p>It includes the following features</p>
+      <ul>
+        <li>Visual Studio Code line wrap for 80 characters</li>
+        <li>JQuery Integration</li>
+        <li>Zurb Foundation Integration</li>
+      </ul>
     </div>
   </body>
 </html>

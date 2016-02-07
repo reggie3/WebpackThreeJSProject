@@ -1,28 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    <!--the build lines below are for script path replacement when the source indexe file is compiled and moved to the distribution-->
+    <!--the filese beneath it are for the initial gathering and injection of javascript and css files into the index.html file as used in the source -->
     <!-- build:js ./scripts/vendor.js-->
     <!-- vendor:js-->
+    <script src="scripts/vendor/foundation.js"></script>
+    <script src="scripts/vendor/jquery.js"></script>
+    <script src="scripts/vendor/what-input.js"></script>
     <!-- endinject-->
     <!-- endbuild-->
     <!-- build:js ./scripts/myMainJS.js-->
     <!-- myjs:js-->
+    <script src="scripts/myjs/myMain.js"></script>
     <!-- endinject-->
     <!-- endbuild-->
-    <!-- mainCSS:css-->
+    <!-- mycss:css-->
+    <link rel="stylesheet" href="css/mycss.css">
     <!-- endinject-->
+    <!-- build:css ./css/vendors.css-->
+    <!-- vendor:css-->
+    <link rel="stylesheet" href="css/foundation-flex.css">
+    <link rel="stylesheet" href="css/foundation.css">
+    <link rel="stylesheet" href="css/main.css">
+    <!-- endinject-->
+    <!-- endbuild-->
+    
+    
     <title>Index</title>
   </head>
   <body>
-    <h1>Jade - node template engine</h1>
+    <h1>Web Application Template</h1>
     <div id="container" class="col">
-      <p>Get on it car you fool, you crazy fool</p>
-      <p>
-        Jade is a terse and simple
-        templating language with a
-        strong focus on performances
-        and powerful featuress.
-      </p>
+      <p>This is a template for a web application project</p>
+      <p>It includes the following features</p>
+      <ul>
+        <li>Visual Studio Code line wrap for 80 characters</li>
+        <li>JQuery Integration</li>
+        <li>Zurb Foundation Integration</li>
+      </ul>
     </div>
   </body>
 </html>

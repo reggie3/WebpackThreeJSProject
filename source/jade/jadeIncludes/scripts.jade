@@ -1,5 +1,7 @@
 //- includes/head.jade
 head
+  //the build lines below are for script path replacement when the source indexe file is compiled and moved to the distribution
+  //the filese beneath it are for the initial gathering and injection of javascript and css files into the index.html file as used in the source 
   // build:js ./scripts/vendor.js
   // vendor:js
   // endinject
@@ -8,7 +10,13 @@ head
   // myjs:js
   // endinject
   // endbuild
-  
-  // mainCSS:css
+  // mycss:css
   // endinject
+  // build:css ./css/vendors.css
+  // vendor:css
+  // endinject
+  // endbuild
+  
+  
+
   

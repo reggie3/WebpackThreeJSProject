@@ -25,6 +25,7 @@ var stylish = require('jshint-stylish');
 var scp = require('gulp-scp2');
 var htmlmin = require('gulp-htmlmin');
 var babel = require('gulp-babel');
+var print = require('gulp-print');
 
 var secrets = require('./secrets.json');
 
@@ -99,6 +100,36 @@ gulp.task('distassets', function(){
         .pipe(gulp.dest(dest + ""));
 });
 
+
+
+// copy my custom css file and vendor css files from source to dist directory
+gulp.task('distcss', function(){
+    runSequence(
+        ['distmycss', 'distvendorcss']
+    );
+})
+//copy my custom css file from source css directory to the dist css directory 
+gulp.task('distmycss', function () {
+
+    var myCSSFile = ['source/css/mycss.css'];
+    var dest = ['dist/css'];
+
+    gulp.src(myCSSFile)
+        .pipe(autoprefixer({
+            browsers: ['> 5%'],
+            cascade: false
+        }))
+        .pipe(uglifycss())
+        .pipe(gulp.dest(dest + ""));
+});
+
+// copy my javscript files and vendor javscript files from source to dist directory
+gulp.task('distjs', function(){
+    runSequence(
+        ['distmyjs', 'distvendorjs']
+    );
+})
+
 //copy custom javascript files from the source directory to scripts directory for distribution
 gulp.task('distmyjs', function () {
 
@@ -114,24 +145,6 @@ gulp.task('distmyjs', function () {
         .pipe(uglify())
         .pipe(gulp.dest(dest + ""));
 });
-
-//copy main css files from bower soruce directory to scripts directory for distribution
-gulp.task('distmycss', function () {
-
-    var cssFiles = ['source/css/*'];
-    var dest = ['dist/css'];
-
-    gulp.src(mainBowerFiles().concat(cssFiles))
-        .pipe(filter('*.css'))
-        .pipe(concat('mycss.css'))
-        .pipe(autoprefixer({
-            browsers: ['> 5%'],
-            cascade: false
-        }))
-        .pipe(uglifycss())
-        .pipe(gulp.dest(dest + ""));
-});
-
 //copy vendor css files from bower source directory to dist css directory for distribution
 gulp.task('distvendorcss', function () {
 
@@ -167,23 +180,27 @@ gulp.task('sourcevendorjs', function () {
         .pipe(gulp.dest(dest + ""));
 });
 
-//copy vendor css files from bower source directory to source font directory for development
+//copy vendor css files from bower source directory to source css directory for development
 gulp.task('sourcevendorcss', function () {
 
     var cssFiles = ['source/scripts/vendor/**/*.css'];
     var dest = ['source/css'];
 
-    gulp.src(mainBowerFiles().concat(cssFiles))
+    gulp.src(mainBowerFiles())
         .pipe(filter('*.css'))
-        .pipe(concat('vendor.css'))
-        .pipe(autoprefixer({
-            browsers: ['> 5%'],
-            cascade: false
-        }))
-        .pipe(uglifycss())
         .pipe(gulp.dest(dest + ""));
 });
 
+//copy vendor scss files from bower source directory to source font directory for development
+gulp.task('sourcevendorscss', function () {
+
+    var scssFiles = ['source/scripts/vendor/**/*.scss'];
+    var dest = ['source/scss/vendor'];
+
+    gulp.src(mainBowerFiles())
+        .pipe(filter('*.scss'))
+        .pipe(gulp.dest(dest + ""));
+});
 //copy bootstrap font files from bower source directory to source font directory for development
 gulp.task('sourcevendorfonts', function () {
 
@@ -193,6 +210,12 @@ gulp.task('sourcevendorfonts', function () {
     gulp.src(fonts)
         .pipe(gulp.dest(dest + ""));
 });
+
+//get the main bower files and copy them to the appropriate css or js source directory
+gulp.task('copybowerfiles', function(){
+    return gulp.src(mainBowerFiles())
+        .pipe(/* what you want to do with the files */)
+})
 
 // create a dev server that updates when relavent source files change
 gulp.task('browsersync', function () {
@@ -254,7 +277,9 @@ gulp.task('inject', function(){
     
     var myjsSources = gulp.src('source/scripts/myjs/*.js', { read: false });
     var vendorSources =  gulp.src('source/scripts/vendor/*.js', { read: false });
-    var mycssSources = gulp.src('source/css/*.css', { read: false });
+    var mycssSources = gulp.src('source/css/mycss.css', { read: false });
+    var vendorcssSources = gulp.src(['source/css/*.css', '!source/css/mycss.css'], { read: false });
+    
     
     gulp.src('source/*.html')
         .pipe(plumber({
@@ -262,7 +287,8 @@ gulp.task('inject', function(){
         }))
         .pipe(inject(vendorSources, {relative: true, name: "vendor"}))
         .pipe(inject(myjsSources, {relative: true, name: "myjs"}))
-        .pipe(inject(mycssSources, {relative: true, name: "mainCSS"}))
+        .pipe(inject(mycssSources, {relative: true, name: "mycss"}))
+        .pipe(inject(vendorcssSources, {relative: true, name: "vendor"}))
         // .pipe(inject(vendorSources, {relative: true},  {starttag: '<!-- inject:vendor:{{ext}} -->'}))
         // .pipe(inject(myjsSources, {relative: true}, {starttag: '<!-- inject:myjs:{{ext}} -->'}))
         .pipe(gulp.dest('source/'));
@@ -270,8 +296,11 @@ gulp.task('inject', function(){
 
 // Watch Files For Changes
 gulp.task('watch', function () {
-    watch(['./source/*.jade', './source/jadeIncludes/*.jade'], { usePolling: true }, function () {
-        gulp.start('jade');
+    watch(['./source/jade/*.jade', './source/jade/jadeIncludes/*.jade'], { usePolling: true }, function () {
+        runSequence(
+            'jade',
+            'inject');
+
     });
     
     //watch the source scripts vendor directory for changes and copy main javascript files to it root for use during development
