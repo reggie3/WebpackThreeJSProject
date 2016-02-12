@@ -26,6 +26,8 @@ var scp = require('gulp-scp2');
 var htmlmin = require('gulp-htmlmin');
 var babel = require('gulp-babel');
 var print = require('gulp-print');
+var webpack = require('webpack-stream');
+var named = require('vinyl-named');
 
 var secrets = require('./secrets.json');
 
@@ -138,7 +140,8 @@ gulp.task('distmyjs', function () {
 
     gulp.src(jsFiles)
         .pipe(filter('*.js'))
-        .pipe(concat('myjs.js'))
+        //.pipe(concat('myjs.js'))
+        .pipe(webpack())
         .pipe(babel({
             presets: ['es2015']
         }))
@@ -165,6 +168,16 @@ gulp.task('distvendorcss', function () {
         .pipe(gulp.dest(dest + ""));
 });
 
+
+//build the source
+gulp.task('buildsource', function(){
+    runSequence(
+        ['jade', 'inject'],
+        'sourcewebpack'
+    )
+})
+
+
 //copy vendor javascript files from  source directory to source scripts directory for devlopment
 gulp.task('sourcevendorjs', function () {
 
@@ -177,6 +190,25 @@ gulp.task('sourcevendorjs', function () {
         }))
         .pipe(filter('*.js'))
         .pipe(uglify())
+        .pipe(gulp.dest(dest + ""));
+});
+
+//webpack my js files
+gulp.task('sourcewebpack', function(){
+    var jsFiles = ['./source/scripts/myjs/*.js'];
+    var dest = ['./source/scripts/'];
+
+    return gulp.src(jsFiles)
+        .pipe(plumber({
+            errorHandler: onError
+        }))
+        .pipe(named())
+        .pipe(webpack({
+            devtool: 'source-map',
+            output: {
+                filename: "bundle.js"
+            }
+        }))
         .pipe(gulp.dest(dest + ""));
 });
 
@@ -210,12 +242,6 @@ gulp.task('sourcevendorfonts', function () {
     gulp.src(fonts)
         .pipe(gulp.dest(dest + ""));
 });
-
-//get the main bower files and copy them to the appropriate css or js source directory
-gulp.task('copybowerfiles', function(){
-    return gulp.src(mainBowerFiles())
-        .pipe(/* what you want to do with the files */)
-})
 
 // create a dev server that updates when relavent source files change
 gulp.task('browsersync', function () {
@@ -275,22 +301,19 @@ gulp.task('useref', function(){
 
 gulp.task('inject', function(){
     
-    var myjsSources = gulp.src('source/scripts/myjs/*.js', { read: false });
+    var myjsSources = gulp.src('source/scripts/bundle.js', { read: false });
     var vendorSources =  gulp.src('source/scripts/vendor/*.js', { read: false });
     var mycssSources = gulp.src('source/css/mycss.css', { read: false });
     var vendorcssSources = gulp.src(['source/css/*.css', '!source/css/mycss.css'], { read: false });
-    
-    
+
     gulp.src('source/*.html')
         .pipe(plumber({
             errorHandler: onError
         }))
         .pipe(inject(vendorSources, {relative: true, name: "vendor"}))
-        .pipe(inject(myjsSources, {relative: true, name: "myjs"}))
+        .pipe(inject(myjsSources, {relative: true, name: "bundle"}))
         .pipe(inject(mycssSources, {relative: true, name: "mycss"}))
         .pipe(inject(vendorcssSources, {relative: true, name: "vendor"}))
-        // .pipe(inject(vendorSources, {relative: true},  {starttag: '<!-- inject:vendor:{{ext}} -->'}))
-        // .pipe(inject(myjsSources, {relative: true}, {starttag: '<!-- inject:myjs:{{ext}} -->'}))
         .pipe(gulp.dest('./source/'));
 });
 

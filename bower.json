@@ -1,7 +1,0 @@
-{
-  "name": "webappTemplate",
-  "dependencies": {
-    "foundation-sites": "^6.1.2"
-  },
-  "devDependencies": {}
-}
