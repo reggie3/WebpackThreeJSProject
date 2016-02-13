@@ -27,9 +27,27 @@ var htmlmin = require('gulp-htmlmin');
 var babel = require('gulp-babel');
 var print = require('gulp-print');
 var webpack = require('webpack-stream');
+var typescript = require('gulp-typescript');
 var named = require('vinyl-named');
+var sourcemaps = require('gulp-sourcemaps');
+var tslint = require('gulp-tslint');
 
+var tsProject = typescript.createProject('./tsconfig.json');
 var secrets = require('./secrets.json');
+var myConfig = require('./myConfig.json');
+
+
+// GLOBALS
+// array of libraries to not concat
+var noConcat = [''];//['three.js'];
+var jsFilesSource = './source/scripts/vendor/';
+//the strings created for those libraries
+var noConcatStrings = [];
+var copyPaths = [];
+noConcat.forEach(function (file) {
+    noConcatStrings.push('!' + jsFilesSource + file);
+    copyPaths.push(jsFilesSource + file);
+})
 
 gulp.task('default', function () {
     // place code for your default task here
@@ -173,7 +191,8 @@ gulp.task('distvendorcss', function () {
 gulp.task('buildsource', function(){
     runSequence(
         ['jade', 'inject'],
-        'sourcewebpack'
+        'typescript',
+        'webpack'
     )
 })
 
@@ -193,24 +212,61 @@ gulp.task('sourcevendorjs', function () {
         .pipe(gulp.dest(dest + ""));
 });
 
+//compile my typescript files and then webpack the js files
+gulp.task('compilejs', ['typescript', 'webpack']);
+
 //webpack my js files
-gulp.task('sourcewebpack', function(){
-    var jsFiles = ['./source/scripts/myjs/*.js'];
+gulp.task('webpack', function () {
+    var jsFiles = ['./source/scripts/myjs/**/*.js'];
     var dest = ['./source/scripts/'];
 
     return gulp.src(jsFiles)
-        .pipe(plumber({
-            errorHandler: onError
-        }))
+        .pipe(print())
         .pipe(named())
         .pipe(webpack({
             devtool: 'source-map',
             output: {
-                filename: "bundle.js"
+                filename: 'bundle.js',
             }
         }))
         .pipe(gulp.dest(dest + ""));
 });
+
+/***********************************************
+ * Typescript Stuff
+ */
+//compile typescript files
+gulp.task('typescript', function () {
+
+    var tsFiles = [myConfig.paths.tsIn];
+    var dest = [myConfig.paths.myJSOut];
+    //console.log(tsFiles);
+    
+    var tsResult = gulp.src(tsFiles)
+        //.pipe(print())
+        .pipe(sourcemaps.init())
+        .pipe(typescript(tsProject));
+        
+
+    return tsResult.js
+        .pipe(concat('bundle.js')) // You can use other plugins that also support gulp-sourcemaps 
+        .pipe(sourcemaps.write()) // Now the sourcemaps are added to the .js file 
+        .pipe(gulp.dest(dest + ""));
+    //remove js files from ts directory
+    del(myConfig.paths.tsInPath + "*.js");
+});
+
+gulp.task('tslint', function(){
+    return gulp.src("./source/scripts/ts/**/*.ts").pipe(tslint()).pipe(tslint.report('prose'));
+});
+
+gulp.task('tsclean', function(){
+     del(myConfig.paths.tsInPath + "*.js");
+});
+/***********************************************
+ * End Typescript Stuff
+ */
+
 
 //copy vendor css files from bower source directory to source css directory for development
 gulp.task('sourcevendorcss', function () {
@@ -275,21 +331,6 @@ gulp.task('sass', function(){
         }))
     .pipe(gulp.dest('source/css/'))
 });
-//compile the jade files into html files
-gulp.task('jade', function () {
-    var YOUR_LOCALS = {};
-    
-    //get all the jade files in the jade directory and its subdirectory, but don't get jade includes
-    gulp.src(['./source/jade/**/*.jade', '!./source/jade/jadeIncludes/**/*'])
-        .pipe(plumber({
-        errorHandler: onError
-        }))
-        .pipe(jade({
-            pretty: true,
-            locals: YOUR_LOCALS
-        }))
-        .pipe(gulp.dest('source/'));
-});
 
 //replace useref calls in html files.  This puts links to the correct javascript files in the the dist directory. 
 // typically run it after running the jade command
@@ -299,14 +340,42 @@ gulp.task('useref', function(){
         .pipe(gulp.dest('dist'));
 });
 
-gulp.task('inject', function(){
+
+//run jade compilation then injection in order
+gulp.task('jadeinject', ['jade', 'inject'])
+
+//compile the jade files into html files
+gulp.task('jade', function (callback) {
+    var YOUR_LOCALS = {};
+    
+    //get all the jade files in the jade directory and its subdirectory, but don't get jade includes
+    var stream = gulp.src(['./source/jade/**/*.jade', '!./source/jade/jadeIncludes/**/*'])
+        .pipe(plumber({
+        errorHandler: onError
+        }))
+        .pipe(jade({
+            pretty: true,
+            locals: YOUR_LOCALS
+        }))
+        .pipe(gulp.dest('./source/'));
+        
+    return stream;
+});
+
+// inject links to javascript and css files into the jade header file
+gulp.task('inject', ['jade'], function(){
     
     var myjsSources = gulp.src('source/scripts/bundle.js', { read: false });
-    var vendorSources =  gulp.src('source/scripts/vendor/*.js', { read: false });
+    // don't put the js libraries that we're not going to concat inside a build section
+    //  that will be replaced by useref later
+    var vendorSources =  
+        gulp.src(['source/scripts/vendor/jquery.js', 'source/scripts/vendor/*.js'].concat(noConcatStrings), 
+            { read: false }
+        );
     var mycssSources = gulp.src('source/css/mycss.css', { read: false });
     var vendorcssSources = gulp.src(['source/css/*.css', '!source/css/mycss.css'], { read: false });
-
-    gulp.src('source/*.html')
+    
+    var stream = gulp.src('source/*.html')
         .pipe(plumber({
             errorHandler: onError
         }))
@@ -314,17 +383,19 @@ gulp.task('inject', function(){
         .pipe(inject(myjsSources, {relative: true, name: "bundle"}))
         .pipe(inject(mycssSources, {relative: true, name: "mycss"}))
         .pipe(inject(vendorcssSources, {relative: true, name: "vendor"}))
+        //copyPaths holds the path of each js library that will be copied directly, and not concated or replaced by an useref injection later
+        .pipe(inject(gulp.src(copyPaths), {relative: true, name: "noMoleste"}))
         .pipe(gulp.dest('./source/'));
+        
+    return stream;
 });
 
 // Watch Files For Changes
 gulp.task('watch', function () {
-    watch(['./source/jade/*.jade', './source/jade/jadeIncludes/*.jade'], { usePolling: true }, function () {
-        runSequence(
-            'jade',
-            'inject');
-
-    });
+    watch(['./source/jade/*.jade', './source/jade/jadeIncludes/*.jade'], 
+        { usePolling: true }, function () {
+            gulp.start('jadeinject');
+    })
     
     //watch the source scripts vendor directory for changes and copy main javascript files to it root for use during development
     watch(['./source/scripts/vendor/**/*.js'], { usePolling: true }, function () {
@@ -335,6 +406,11 @@ gulp.task('watch', function () {
     //watch scss files and compile them when the change
     watch(['./source/scss/**/*.scss'], { usePolling: true }, function () {
         gulp.start('sass');
+    });
+    
+    //wathc and compile typescript files
+    watch(["./source/scripts/ts/*.ts"], function(){
+        gulp.start('compilejs'); //, 'webpack']);
     });
 });
 

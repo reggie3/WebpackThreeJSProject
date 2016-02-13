@@ -1,0 +1,13 @@
+ {
+    "paths": {
+    "myJSIn": "./source/scripts/myjs/*.js",
+    "myJSOut": "./source/scripts/myjs",
+    "tsIn": "./source/scripts/ts/*.ts",
+    "tsInPath" : "./source/scripts/ts/",
+    "tsOutPath": "./source/scripts/myjs/",
+    "vendorIn": "./source/scripts/vendor/*.js",
+    "JSOut": "./source/scripts",
+    "typings":  "./tools/typings/",
+    "libraryTypeScriptDefinitions": "./tools/typings/**/*.ts"
+     }   
+}
